@@ -4,15 +4,17 @@ using UnityEngine;
 
 public class StarGenerator : MonoBehaviour
 {
+    // Prefab de las estrellas
     [SerializeField] MeshRenderer starPrefab;
 
-    public int count = 1000;
-    public Vector2 radiusRange;
-    public Vector2 brightnessRange;
+    // Parámetros del generador
+    [SerializeField] private int count = 1000;
+    [SerializeField] private Vector2 radiusRange;
+    [SerializeField] private Vector2 brightnessRange;
 
-    const float distance = 2000;
-
-    Camera cam;
+    // Variables privadas
+    private float distance = 2000;
+    private Camera cam;
 
     void Start()
     {
@@ -29,6 +31,19 @@ public class StarGenerator : MonoBehaviour
         }
     }
 
+    void LateUpdate()
+    {
+        if (cam != null)
+        {
+            transform.position = cam.transform.position;
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="iterations"></param>
+    /// <returns></returns>
     float SmallestRandomValue(int iterations)
     {
         float r = 1;
@@ -37,13 +52,5 @@ public class StarGenerator : MonoBehaviour
             r = Mathf.Min(r, Random.value);
         }
         return r;
-    }
-
-    void LateUpdate()
-    {
-        if (cam != null)
-        {
-            transform.position = cam.transform.position;
-        }   
     }
 }

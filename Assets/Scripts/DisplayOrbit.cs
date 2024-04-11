@@ -5,18 +5,15 @@ using UnityEngine;
 [ExecuteInEditMode]
 public class DisplayOrbit : MonoBehaviour
 {
+    // Variables públicas
     public int numSteps = 1000;
     public float timeStep = 0.1f;
-
-    public bool relativeToBody;
+    public bool relativeToPlanet;
     public GameObject centralPlanet;
 
     void Start()
     {
-        if (Application.isPlaying)
-        {
-            this.enabled = false;
-        }
+        if (Application.isPlaying) this.enabled = false;
     }
 
     void Update()
@@ -24,68 +21,71 @@ public class DisplayOrbit : MonoBehaviour
         DrawOrbits();
     }
 
+    /// <summary>
+    /// Dibuja las órbitas de los planetas
+    /// </summary>
     void DrawOrbits()
     {
         GameObject[] planets = GameObject.FindGameObjectsWithTag("Planet");
-        var virtualPlanets = new VirtualPlanet[planets.Length];
-        var drawPoints = new Vector3[planets.Length][];
-        int referenceFrameIndex = 0;
-        Vector3 referenceBodyInitialPosition = Vector3.zero;
+        VirtualPlanet[] virtualPlanets = new VirtualPlanet[planets.Length];
+        Vector3[][] drawPoints = new Vector3[planets.Length][];
+        Vector3 referencePlanetInitialPosition = Vector3.zero;
+        int referencePlanetIndex = 0;
 
-        // Crea los planetas virtuales
-        for (int i = 0; i < virtualPlanets.Length; i++)
+        // Crea los planetas virtuales y llena la lista con ellos
+        for (int index = 0; index < virtualPlanets.Length; index++)
         {
-            virtualPlanets[i] = new VirtualPlanet(planets[i]);
-            drawPoints[i] = new Vector3[numSteps];
+            virtualPlanets[index] = new VirtualPlanet(planets[index]);
+            drawPoints[index] = new Vector3[numSteps];
 
-            if (planets[i] == centralPlanet && relativeToBody)
+            if (planets[index] == centralPlanet && relativeToPlanet)
             {
-                referenceFrameIndex = i;
-                referenceBodyInitialPosition = virtualPlanets[i].position;
+                referencePlanetIndex = index;
+                referencePlanetInitialPosition = virtualPlanets[index].position;
             }
         }
 
-        // Simulate
+        // Simulación con respecto al número de pasos
         for (int step = 0; step < numSteps; step++)
         {
-            Vector3 referenceBodyPosition = (relativeToBody) ? virtualPlanets[referenceFrameIndex].position : Vector3.zero;
+            Vector3 referenecePlanetPosition = (relativeToPlanet) ? virtualPlanets[referencePlanetIndex].position : Vector3.zero;
             
-            // Update velocities
-            for (int i = 0; i < virtualPlanets.Length; i++)
+            // Actualiza las velocidades de cada planeta
+            for (int index = 0; index < virtualPlanets.Length; index++)
             {
-                virtualPlanets[i].velocity += CalculateAcceleration(i, virtualPlanets) * timeStep;
+                virtualPlanets[index].velocity += CalculateAcceleration(index, virtualPlanets) * timeStep;
             }
 
-            // Update positions
-            for (int i = 0; i < virtualPlanets.Length; i++)
+            // Actualiza las posiciones de cada planeta
+            for (int index = 0; index < virtualPlanets.Length; index++)
             {
-                Vector3 newPos = virtualPlanets[i].position + virtualPlanets[i].velocity * timeStep;
-                virtualPlanets[i].position = newPos;
-                if (relativeToBody)
+                Vector3 newPosition = virtualPlanets[index].position + virtualPlanets[index].velocity * timeStep;
+                virtualPlanets[index].position = newPosition;
+                if (relativeToPlanet)
                 {
-                    var referenceFrameOffset = referenceBodyPosition - referenceBodyInitialPosition;
-                    newPos -= referenceFrameOffset;
+                    Vector3 referencePlanetOffset = referenecePlanetPosition - referencePlanetInitialPosition;
+                    newPosition -= referencePlanetOffset;
                 }
-                if (relativeToBody && i == referenceFrameIndex)
+                if (relativeToPlanet && index == referencePlanetIndex)
                 {
-                    newPos = referenceBodyInitialPosition;
+                    newPosition = referencePlanetInitialPosition;
                 }
 
-                drawPoints[i][step] = newPos;
+                drawPoints[index][step] = newPosition;
             }
         }
 
-        // Draw paths
-        for (int bodyIndex = 0; bodyIndex < virtualPlanets.Length; bodyIndex++)
+        // Dibuja las órbitas
+        for (int planetIndex = 0; planetIndex < virtualPlanets.Length; planetIndex++)
         {
-            var pathColour = planets[bodyIndex].gameObject.GetComponent<MeshRenderer>().sharedMaterial.color;
+            Color pathColour = planets[planetIndex].gameObject.GetComponent<MeshRenderer>().sharedMaterial.color;
 
-            for (int i = 0; i < drawPoints[bodyIndex].Length - 1; i++)
+            for (int step = 0; step < drawPoints[planetIndex].Length - 1; step++)
             {
-                Debug.DrawLine(drawPoints[bodyIndex][i], drawPoints[bodyIndex][i + 1], pathColour);
+                Debug.DrawLine(drawPoints[planetIndex][step], drawPoints[planetIndex][step + 1], pathColour);
             }
 
-            var lineRenderer = planets[bodyIndex].gameObject.GetComponentInChildren<LineRenderer>();
+            var lineRenderer = planets[planetIndex].gameObject.GetComponentInChildren<LineRenderer>();
             if (lineRenderer)
             {
                 lineRenderer.enabled = false;
@@ -94,21 +94,30 @@ public class DisplayOrbit : MonoBehaviour
         }
     }
 
-    Vector3 CalculateAcceleration(int i, VirtualPlanet[] virtualPlanets)
+    /// <summary>
+    /// Calcula la aceleración de los planetas para dibujar sus órbitas
+    /// </summary>
+    /// <param name="indexPlanet">Índice del planeta sobre el cual se calcula la aceleración</param>
+    /// <param name="virtualPlanets">Lista de planetas virtuales</param>
+    /// <returns></returns>
+    Vector3 CalculateAcceleration(int indexPlanet, VirtualPlanet[] virtualPlanets)
     {
         float distance;
         Vector3 forceDirection, acceleration = Vector3.zero;
-        for (int j = 0; j < virtualPlanets.Length; j++)
+        for (int index = 0; index < virtualPlanets.Length; index++)
         {
-            if (i == j) { continue; }
+            if (indexPlanet == index) { continue; }
 
-            distance = (virtualPlanets[j].position - virtualPlanets[i].position).sqrMagnitude;
-            forceDirection = (virtualPlanets[j].position - virtualPlanets[i].position).normalized;
-            acceleration += forceDirection * Universe.gravitationalConstant * virtualPlanets[j].mass / distance;
+            distance = (virtualPlanets[index].position - virtualPlanets[indexPlanet].position).sqrMagnitude;
+            forceDirection = (virtualPlanets[index].position - virtualPlanets[indexPlanet].position).normalized;
+            acceleration += forceDirection * Universe.gravitationalConstant * virtualPlanets[index].mass / distance;
         }
         return acceleration;
     }
 
+    /// <summary>
+    /// Copia virtual de los planetas para acceder a sus propiedades sin modificar las originales
+    /// </summary>
     class VirtualPlanet
     {
         public Vector3 position;

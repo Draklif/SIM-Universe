@@ -1,20 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class Universe : MonoBehaviour
 {
+    // Prefab de la explosión en colisión
     [SerializeField] private ParticleSystem explosionPrefab;
 
+    // Constantes públicas
     public const float gravitationalConstant = 0.0001f;
     public const float universeTime = 0.1f;
 
+    // Variables privadas
     private List<GameObject> planets = new List<GameObject>();
     private ParticleSystem explosion;
+    private Vector3 acceleration;
 
-    Vector3 acceleration;
+    // Instancia del universo
+    static Universe instance;
 
     void Awake()
     {
@@ -77,8 +80,7 @@ public class Universe : MonoBehaviour
         GameObject bigPlanet = planetA.GetComponent<Transform>().localScale.x > planetB.GetComponent<Transform>().localScale.x ? planetA : planetB;
         GameObject smallPlanet = planetA == bigPlanet ? planetB : planetA;
 
-        bigPlanet.GetComponent<Planet>().radius += smallPlanet.GetComponent<Planet>().radius * 0.1f;
-        bigPlanet.GetComponent<Planet>().BuildPlanet();
+        bigPlanet.GetComponent<Planet>().BuildPlanet(bigPlanet.GetComponent<Planet>().radius + smallPlanet.GetComponent<Planet>().radius * 0.1f);
         Vector3 forceDirection = (bigPlanet.transform.position - smallPlanet.transform.position).normalized;
         acceleration = bigPlanet.GetComponent<Planet>().velocity + smallPlanet.GetComponent<Planet>().velocity + forceDirection * gravitationalConstant * bigPlanet.GetComponent<Planet>().mass / distance;
 
@@ -89,5 +91,24 @@ public class Universe : MonoBehaviour
 
         explosion = Instantiate(explosionPrefab, smallPlanet.transform.position, Quaternion.identity);
         explosion.transform.localScale = smallPlanet.transform.localScale;
+    }
+
+    public static List<GameObject> Planets
+    {
+        get {
+            return Instance.planets;
+        }
+    }
+
+    static Universe Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                instance = FindObjectOfType<Universe>();
+            }
+            return instance;
+        }
     }
 }
