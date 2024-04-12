@@ -82,7 +82,7 @@ public class Universe : MonoBehaviour
 
         bigPlanet.GetComponent<Planet>().BuildPlanet(bigPlanet.GetComponent<Planet>().radius + smallPlanet.GetComponent<Planet>().radius * 0.1f);
         Vector3 forceDirection = (bigPlanet.transform.position - smallPlanet.transform.position).normalized;
-        acceleration = bigPlanet.GetComponent<Planet>().velocity + smallPlanet.GetComponent<Planet>().velocity + forceDirection * gravitationalConstant * bigPlanet.GetComponent<Planet>().mass / distance;
+        acceleration += bigPlanet.GetComponent<Planet>().velocity + smallPlanet.GetComponent<Planet>().velocity + forceDirection * gravitationalConstant * bigPlanet.GetComponent<Planet>().mass / distance;
 
         bigPlanet.GetComponent<Planet>().UpdateVelocity(acceleration, universeTime);
 
@@ -90,7 +90,7 @@ public class Universe : MonoBehaviour
         Destroy(smallPlanet);
 
         explosion = Instantiate(explosionPrefab, smallPlanet.transform.position, Quaternion.identity);
-        explosion.transform.localScale = smallPlanet.transform.localScale;
+        explosion.transform.localScale = smallPlanet.transform.localScale * 4;
     }
 
     public static List<GameObject> Planets
