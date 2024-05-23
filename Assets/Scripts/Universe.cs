@@ -75,6 +75,7 @@ public class Universe : MonoBehaviour
         }
         return acceleration;
     }
+
     void MergePlanets(GameObject planetA, GameObject planetB, float distance)
     {
         GameObject bigPlanet = planetA.GetComponent<Transform>().localScale.x > planetB.GetComponent<Transform>().localScale.x ? planetA : planetB;
