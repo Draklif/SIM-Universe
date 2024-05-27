@@ -41,8 +41,7 @@ public class Chamber : MonoBehaviour
                         );
                         if (distance < (radA + radB))
                         {
-                            Particles[i].GetComponent<Particle>().Bounce();
-                            Particles[j].GetComponent<Particle>().Bounce();
+                            Particles[i].GetComponent<Particle>().ParticleCollide(Particles[j].GetComponent<Particle>());
                         }
                     }
                 }
