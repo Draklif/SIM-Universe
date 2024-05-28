@@ -5,13 +5,16 @@ using UnityEngine;
 public class Particle : MonoBehaviour
 {
     [SerializeField] Transform Spawner;
-    [SerializeField] float DampingFactor;
-    [SerializeField] float LaunchVel;
-    [SerializeField] float LaunchPitch;
-    [SerializeField] float LaunchYaw;
-    [SerializeField] float Mass;
-    [SerializeField] float Restitution;
+    [SerializeField] public float DampingFactor;
+    [SerializeField] public float LaunchVel;
+    [SerializeField] public float LaunchPitch;
+    [SerializeField] public float LaunchYaw;
+    [SerializeField] public float Mass;
+    [SerializeField] public float Restitution;
+    [SerializeField] float Spring;
     [SerializeField] Transform RoomCenter;
+    [SerializeField] Transform Anchor;
+    [SerializeField] bool isSimple = true;
 
     Vector3 Pos;
     Vector3 Force;
@@ -29,11 +32,18 @@ public class Particle : MonoBehaviour
 
         Pos = Spawner.position;
 
-        float velX = LaunchVel * Mathf.Cos(Mathf.Deg2Rad * LaunchYaw);
-        float velY = LaunchVel * Mathf.Sin(Mathf.Deg2Rad * LaunchPitch);
-        float velZ = LaunchVel * Mathf.Sin(Mathf.Deg2Rad * LaunchYaw);
+        if (isSimple)
+        {
+            float velX = LaunchVel * Mathf.Cos(Mathf.Deg2Rad * LaunchYaw);
+            float velY = LaunchVel * Mathf.Sin(Mathf.Deg2Rad * LaunchPitch);
+            float velZ = LaunchVel * Mathf.Sin(Mathf.Deg2Rad * LaunchYaw);
 
-        Vel = new Vector3(velX, velY, velZ);
+            Vel = new Vector3(velX, velY, velZ);
+        }
+        else
+        {
+            Vel = Vector3.zero;
+        }
 
         transform.localScale *= Mass * 0.5f;
         floor = RoomCenter.position.y + 0.15f + transform.localScale.y * 0.5f;
@@ -51,6 +61,49 @@ public class Particle : MonoBehaviour
         CalculatePosition();
         CalculateCollisions();
         CalculateForce(FrictionMag, GravityMag);
+    }
+
+    public void Boing(float Steps, float FrictionMag, float GravityMag)
+    {
+        Vector3 SpringForce = CalculateSpringForce();
+        Vector3 Acceleration = SpringForce / Mass;
+
+        Acceleration -= FrictionMag * Vel;
+        Acceleration += new Vector3(0, -GravityMag * Mass, 0);
+
+        Vel = Vel + (Steps * Acceleration);
+        Pos = Pos + (Steps * Vel);
+
+        if (Pos.y <= floor)
+        {
+            Pos = new Vector3(Pos.x, floor, Pos.z);
+            Vel = new Vector3(Vel.x, Vel.y * -DampingFactor, Vel.z);
+        }
+
+        CalculatePosition();
+    }
+
+    private Vector3 CalculateSpringForce()
+    {
+        Vector3 displacement = Pos - Anchor.position;
+        float currentLength = displacement.magnitude;
+
+        Vector3 springForce = Spring * (5f - currentLength) * displacement.normalized * Mass;
+
+        return springForce;
+    }
+
+    public void CalculateForce(float FrictionMag, float GravityMag)
+    {
+        Vector3 Gravity = new Vector3(0, -GravityMag * Mass, 0);
+        Vector3 Friction = -FrictionMag * Vel.normalized * Mass;
+
+        if (Pos.y > floor)
+        {
+            Friction = Vector3.zero;
+        }
+
+        Force = Gravity + Friction;
     }
 
     public void CalculateCollisions()
@@ -90,19 +143,6 @@ public class Particle : MonoBehaviour
             Pos = new Vector3(Pos.x, Pos.y, wallZ + roomDepth);
             Vel = new Vector3(Vel.x, Vel.y, Vel.z * -DampingFactor);
         }
-    }
-
-    public void CalculateForce(float FrictionMag, float GravityMag)
-    {
-        Vector3 Gravity = new Vector3(0, -GravityMag * Mass, 0);
-        Vector3 Friction = -FrictionMag * Vel.normalized * Mass;
-
-        if (Pos.y > floor)
-        {
-            Friction = Vector3.zero;
-        }
-
-        Force = Gravity + Friction;
     }
 
     public void CalculatePosition()

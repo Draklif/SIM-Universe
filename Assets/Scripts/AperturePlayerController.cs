@@ -4,6 +4,7 @@ public class AperturePlayerController : MonoBehaviour
 {
     public CharacterController cc;
     [SerializeField] private GameObject player;
+    [SerializeField] private GameObject PauseHUD;
     [SerializeField] private Camera cam;
     [SerializeField] private float Sensitivity;
 
@@ -11,7 +12,7 @@ public class AperturePlayerController : MonoBehaviour
 
     private Vector3 crouchScale, normalScale;
 
-    public bool isMoving, isCrouching, isRunning;
+    public bool isMoving, isCrouching, isRunning, isPaused;
 
     private float X, Y;
 
@@ -27,6 +28,11 @@ public class AperturePlayerController : MonoBehaviour
     }
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            Pause();
+        }
+
         #region Camera Limitation Calculator
         //Camera limitation variables
         const float MIN_Y = -60.0f;
@@ -72,5 +78,15 @@ public class AperturePlayerController : MonoBehaviour
         // Detects if the player is moving.
         // Useful if you want footstep sounds and or other features in your game.
         isMoving = cc.velocity.sqrMagnitude > 0.0f ? true : false;
+    }
+
+    private void Pause()
+    {
+        isPaused = !isPaused;
+
+        Time.timeScale = isPaused ? 0f : 1.0f;
+        PauseHUD.SetActive(isPaused);
+        Cursor.visible = isPaused;
+        Cursor.lockState = isPaused ? CursorLockMode.None : CursorLockMode.Locked;
     }
 }
